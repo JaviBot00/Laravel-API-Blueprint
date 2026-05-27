@@ -1,4 +1,3 @@
-
 FROM php:8.3-fpm
  
 # Instalar dependencias del sistema
@@ -22,23 +21,21 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
  
 # -----------------------------------------------------------------------------
-# 1. Descargar Laravel limpio en /tmp/laravel
+# 1. Crear proyecto Laravel limpio
 # -----------------------------------------------------------------------------
-RUN composer create-project laravel/laravel /tmp/laravel --prefer-dist --no-interaction
+RUN composer create-project laravel/laravel . --prefer-dist --no-interaction
  
 # -----------------------------------------------------------------------------
-# 2. Mover el proyecto Laravel a /var/www
+# 2. Instalar los paquetes extra uno a uno sobre el Laravel base
+#    Así composer resuelve las dependencias sin conflictos
 # -----------------------------------------------------------------------------
-RUN cp -r /tmp/laravel/. /var/www/ && rm -rf /tmp/laravel
+RUN composer require tymon/jwt-auth --no-interaction --prefer-dist
+RUN composer require spatie/laravel-permission --no-interaction --prefer-dist
+RUN composer require owen-it/laravel-auditing --no-interaction --prefer-dist
+RUN composer require darkaonline/l5-swagger --no-interaction --prefer-dist
  
 # -----------------------------------------------------------------------------
-# 3. Copiar nuestro composer.json con los paquetes extra y reinstalar
-# -----------------------------------------------------------------------------
-COPY composer.json /var/www/composer.json
-RUN composer update --no-interaction --prefer-dist --optimize-autoloader
- 
-# -----------------------------------------------------------------------------
-# 4. Copiar todos nuestros archivos encima del Laravel base
+# 3. Copiar todos nuestros archivos encima del Laravel base
 #    (sobreescribe los que Laravel trae por defecto con los nuestros)
 # -----------------------------------------------------------------------------
 COPY app/        /var/www/app/
