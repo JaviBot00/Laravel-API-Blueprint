@@ -10,7 +10,7 @@ namespace App\Http\Controllers;
  * )
  *
  * @OA\Server(
- *   url=L5_SWAGGER_CONST_HOST,
+ *   url="/",
  *   description="Servidor local (Docker)"
  * )
  *

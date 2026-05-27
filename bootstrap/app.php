@@ -47,12 +47,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         /*
         |----------------------------------------------------------------------
-        | Middleware de API stateless
+        | API stateless
         |----------------------------------------------------------------------
-        | Indicamos a Laravel que las rutas de API no usen sesiones ni cookies.
-        | Esto es correcto para APIs REST con JWT.
+        | Las rutas de API no usan sesiones. Con JWT no necesitamos Sanctum
+        | ni su middleware statefulApi(). Laravel ya es stateless por defecto
+        | en las rutas definidas en routes/api.php.
         */
-        $middleware->statefulApi();
     })
 
     ->withExceptions(function (Exceptions $exceptions) {

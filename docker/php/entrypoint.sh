@@ -1,63 +1,90 @@
 #!/bin/sh
+set -e
 
 # =============================================================================
-# entrypoint.sh
+# Permisos de storage — necesario porque el volumen puede montarse como root
 # =============================================================================
-# Script que se ejecuta cada vez que arranca el contenedor de la app.
-# Se encarga de:
-#   1. Esperar a que MySQL esté listo (puede tardar unos segundos al arrancar)
-#   2. Copiar el .env si no existe
-#   3. Generar la clave de Laravel si no está generada
-#   4. Generar el secreto JWT si no está generado
-#   5. Ejecutar las migraciones y el seeder
-#   6. Generar la documentación Swagger
-#   7. Arrancar PHP-FPM
-# =============================================================================
-
-set -e  # Detener el script si cualquier comando falla
+chmod -R 775 /var/www/storage
+chmod -R 775 /var/www/bootstrap/cache
+chown -R www-data:www-data /var/www/storage
+chown -R www-data:www-data /var/www/bootstrap/cache
 
 echo "⏳ Esperando a que MySQL esté disponible..."
 
-# Intentamos conectar hasta que MySQL responda, con un máximo de 30 intentos
 RETRIES=30
 until php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT};dbname=${DB_DATABASE}', '${DB_USERNAME}', '${DB_PASSWORD}');" 2>/dev/null; do
     RETRIES=$((RETRIES - 1))
     if [ "$RETRIES" -eq 0 ]; then
-        echo "❌ No se pudo conectar a MySQL. Comprueba la configuración en .env"
+        echo "❌ No se pudo conectar a MySQL."
         exit 1
     fi
-    echo "   MySQL no disponible todavía, reintentando en 2s... ($RETRIES intentos restantes)"
+    echo "   Reintentando en 2s... ($RETRIES intentos restantes)"
     sleep 2
 done
 
 echo "✅ MySQL disponible."
 
 # =============================================================================
-# Configuración del entorno
+# public/ — copiar al volumen compartido con nginx si está vacío
 # =============================================================================
-
-# Si no existe el .env, lo creamos a partir del .env.example
-if [ ! -f ".env" ]; then
-    echo "📋 Copiando .env.example a .env..."
-    cp .env.example .env
+if [ ! -f "/var/www/public/index.php" ]; then
+    echo "📁 Copiando public/ al volumen compartido..."
+    cp -r /var/www/public_src/. /var/www/public/
+    chown -R www-data:www-data /var/www/public
 fi
 
-# Generar la APP_KEY solo si no está ya establecida
-if grep -q "APP_KEY=$" .env || grep -q "APP_KEY=\"\"" .env; then
+# =============================================================================
+# .env
+# =============================================================================
+if [ ! -f "/var/www/.env" ]; then
+    echo "📋 Creando .env..."
+    cp /var/www/.env.example /var/www/.env
+
+    echo "" >> /var/www/.env
+    echo "# JWT" >> /var/www/.env
+    echo "JWT_SECRET=" >> /var/www/.env
+    echo "JWT_TTL=60" >> /var/www/.env
+    echo "" >> /var/www/.env
+    echo "# Swagger" >> /var/www/.env
+    echo "L5_SWAGGER_GENERATE_ALWAYS=true" >> /var/www/.env
+
+    sed -i "s|DB_HOST=127.0.0.1|DB_HOST=${DB_HOST}|g" /var/www/.env
+    sed -i "s|DB_PORT=3306|DB_PORT=${DB_PORT}|g" /var/www/.env
+    sed -i "s|DB_DATABASE=laravel|DB_DATABASE=${DB_DATABASE}|g" /var/www/.env
+    sed -i "s|DB_USERNAME=root|DB_USERNAME=${DB_USERNAME}|g" /var/www/.env
+    sed -i "s|DB_PASSWORD=|DB_PASSWORD=${DB_PASSWORD}|g" /var/www/.env
+fi
+
+# =============================================================================
+# APP_KEY
+# =============================================================================
+APP_KEY_VALUE=$(grep "^APP_KEY=" /var/www/.env | cut -d'=' -f2)
+if [ -z "$APP_KEY_VALUE" ]; then
     echo "🔑 Generando APP_KEY..."
     php artisan key:generate --ansi
 fi
 
-# Generar el JWT_SECRET solo si no está ya establecido
-if grep -q "JWT_SECRET=$" .env || grep -q "JWT_SECRET=\"\"" .env; then
+# =============================================================================
+# JWT_SECRET
+# =============================================================================
+JWT_VALUE=$(grep "^JWT_SECRET=" /var/www/.env | cut -d'=' -f2)
+if [ -z "$JWT_VALUE" ]; then
     echo "🔐 Generando JWT_SECRET..."
     php artisan jwt:secret --ansi --force
 fi
 
 # =============================================================================
-# Base de datos
+# Publicar configuraciones de paquetes
 # =============================================================================
+echo "📦 Publicando configuraciones..."
+php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServiceProvider" --quiet
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider" --quiet
+php artisan vendor:publish --provider="OwenIt\Auditing\AuditingServiceProvider" --tag="auditing-migrations" --quiet
+php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --quiet
 
+# =============================================================================
+# Migraciones y seeders
+# =============================================================================
 echo "🗄️  Ejecutando migraciones..."
 php artisan migrate --force --ansi
 
@@ -67,13 +94,11 @@ php artisan db:seed --force --ansi
 # =============================================================================
 # Swagger
 # =============================================================================
-
 echo "📖 Generando documentación Swagger..."
-php artisan l5-swagger:generate
+php artisan l5-swagger:generate || echo "⚠️  Swagger: se generará en la primera petición."
 
 # =============================================================================
 # Arrancar PHP-FPM
 # =============================================================================
-
 echo "🚀 Arrancando PHP-FPM..."
 exec php-fpm
