@@ -10,13 +10,20 @@ services:
     working_dir: /var/www
     volumes:
       - .:/var/www
+      # Estos volúmenes anónimos "protegen" las carpetas generadas dentro del
+      # contenedor para que el bind mount anterior no las sobreescriba.
+      # Sin esto, montar "." vaciaría vendor/ y public/ que instaló el Dockerfile.
+      - app_vendor:/var/www/vendor
+      - app_public:/var/www/public
+      - app_storage:/var/www/storage
+      - app_bootstrap_cache:/var/www/bootstrap/cache
     env_file:
       - .env
     networks:
       - laravel_net
     depends_on:
       db:
-        condition: service_healthy  # espera a que MySQL pase su healthcheck
+        condition: service_healthy
 
   # Servidor web Nginx
   nginx:
@@ -27,6 +34,7 @@ services:
       - "8080:80"
     volumes:
       - .:/var/www
+      - app_public:/var/www/public
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     networks:
       - laravel_net
@@ -50,8 +58,6 @@ services:
       - db_data:/var/lib/mysql
     networks:
       - laravel_net
-    # Healthcheck: docker-compose esperará a que MySQL acepte conexiones
-    # antes de considerar el contenedor como "listo"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root}"]
       interval: 5s
@@ -66,3 +72,7 @@ networks:
 
 volumes:
   db_data:
+  app_vendor:
+  app_public:
+  app_storage:
+  app_bootstrap_cache:
