@@ -30,6 +30,7 @@ services:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     networks:
       - laravel_net
+      - red-compartida
     depends_on:
       - app
 
@@ -60,6 +61,8 @@ services:
 networks:
   laravel_net:
     driver: bridge
+  red-compartida:
+    external: true
 
 volumes:
   db_data:
