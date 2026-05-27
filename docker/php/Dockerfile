@@ -18,15 +18,20 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
  
+# -----------------------------------------------------------------------------
+# 1. Crear proyecto Laravel en /tmp/app (directorio inexistente = sin conflicto)
+# -----------------------------------------------------------------------------
+RUN composer create-project laravel/laravel /tmp/app --prefer-dist --no-interaction
+ 
+# -----------------------------------------------------------------------------
+# 2. Mover el proyecto a /var/www
+# -----------------------------------------------------------------------------
+RUN mv /tmp/app /var/www
+ 
 WORKDIR /var/www
  
 # -----------------------------------------------------------------------------
-# 1. Crear proyecto Laravel limpio
-# -----------------------------------------------------------------------------
-RUN composer create-project laravel/laravel . --prefer-dist --no-interaction
- 
-# -----------------------------------------------------------------------------
-# 2. Instalar los paquetes extra uno a uno sobre el Laravel base
+# 3. Instalar los paquetes extra uno a uno sobre el Laravel base
 #    Así composer resuelve las dependencias sin conflictos
 # -----------------------------------------------------------------------------
 RUN composer require tymon/jwt-auth --no-interaction --prefer-dist
@@ -35,7 +40,7 @@ RUN composer require owen-it/laravel-auditing --no-interaction --prefer-dist
 RUN composer require darkaonline/l5-swagger --no-interaction --prefer-dist
  
 # -----------------------------------------------------------------------------
-# 3. Copiar todos nuestros archivos encima del Laravel base
+# 4. Copiar todos nuestros archivos encima del Laravel base
 #    (sobreescribe los que Laravel trae por defecto con los nuestros)
 # -----------------------------------------------------------------------------
 COPY app/        /var/www/app/
