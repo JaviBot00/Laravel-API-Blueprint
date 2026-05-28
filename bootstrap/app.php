@@ -4,10 +4,8 @@
 |--------------------------------------------------------------------------
 | bootstrap/app.php
 |--------------------------------------------------------------------------
-|
 | En Laravel 11 este archivo reemplaza a los antiguos Kernel.php de HTTP
 | y de consola. Aquí se registran middlewares, rutas y excepciones.
-|
 */
 
 use Illuminate\Foundation\Application;
@@ -16,29 +14,39 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
-
     ->withRouting(
-        // Archivo de rutas web (no lo usamos, pero Laravel lo requiere)
-        web: __DIR__.'/../routes/web.php',
-        // Archivo de rutas de la API — todas llevan el prefijo /api automáticamente
-        api: __DIR__.'/../routes/api.php',
+        web:      __DIR__.'/../routes/web.php',
+        api:      __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
-        health: '/up',
+        health:   '/up',
     )
-
     ->withMiddleware(function (Middleware $middleware) {
+
+        /*
+        |----------------------------------------------------------------------
+        | Trusted Proxies — imprescindible con Nginx Proxy Manager delante
+        |----------------------------------------------------------------------
+        | NPM termina SSL y reenvía las peticiones con los headers:
+        |   X-Forwarded-For, X-Forwarded-Proto, X-Forwarded-Host
+        |
+        | Sin esta configuración Laravel genera URLs http:// aunque el cliente
+        | llegue por https://, lo que rompe las URLs absolutas de Swagger
+        | y las redirecciones.
+        |
+        | '*' confía en todos los proxies. Si prefieres restringirlo a la IP
+        | interna de NPM en Docker, cámbialo por esa IP concreta.
+        */
+        $middleware->trustProxies(at: '*');
 
         /*
         |----------------------------------------------------------------------
         | Aliases de middleware
         |----------------------------------------------------------------------
-        | Registramos los alias que usamos en routes/api.php.
-        |
         | 'role'    → middleware de Spatie para comprobar roles
-        |             Uso: Route::middleware('role:admin')
+        |              Uso: Route::middleware('role:admin')
         |
         | 'log.api' → nuestro middleware de estadísticas de uso
-        |             Uso: Route::middleware('log.api')
+        |              Uso: Route::middleware('log.api')
         */
         $middleware->alias([
             'role'    => \Spatie\Permission\Middleware\RoleMiddleware::class,
@@ -54,7 +62,6 @@ return Application::configure(basePath: dirname(__DIR__))
         | en las rutas definidas en routes/api.php.
         */
     })
-
     ->withExceptions(function (Exceptions $exceptions) {
 
         /*
@@ -82,5 +89,4 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
     })
-
     ->create();

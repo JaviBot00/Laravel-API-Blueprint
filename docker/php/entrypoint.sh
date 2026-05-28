@@ -2,103 +2,70 @@
 set -e
 
 # =============================================================================
-# Permisos de storage — necesario porque el volumen puede montarse como root
+# ENTRYPOINT — tareas de ARRANQUE únicamente.
+# Las tareas de despliegue (migrate, seed, swagger) van en deploy.sh
+# y se ejecutan manualmente o en el pipeline CI/CD, no en cada reinicio.
 # =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Permisos de storage — debe ir PRIMERO, después del montaje del volumen
+#    El chown del Dockerfile no basta porque Docker monta volúmenes después.
+# -----------------------------------------------------------------------------
+echo "🔒 Ajustando permisos de storage..."
+chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 chmod -R 775 /var/www/storage
 chmod -R 775 /var/www/bootstrap/cache
-chown -R www-data:www-data /var/www/storage
-chown -R www-data:www-data /var/www/bootstrap/cache
 
-echo "⏳ Esperando a que MySQL esté disponible..."
-
+# -----------------------------------------------------------------------------
+# 2. Esperar a MySQL
+# -----------------------------------------------------------------------------
+echo "⏳ Esperando a MySQL (${DB_HOST}:${DB_PORT:-3306})..."
 RETRIES=30
-until php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT};dbname=${DB_DATABASE}', '${DB_USERNAME}', '${DB_PASSWORD}');" 2>/dev/null; do
+until php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT:-3306};dbname=${DB_DATABASE}', '${DB_USERNAME}', '${DB_PASSWORD}');" 2>/dev/null; do
     RETRIES=$((RETRIES - 1))
     if [ "$RETRIES" -eq 0 ]; then
-        echo "❌ No se pudo conectar a MySQL."
+        echo "❌ No se pudo conectar a MySQL tras 30 intentos."
         exit 1
     fi
     echo "   Reintentando en 2s... ($RETRIES intentos restantes)"
     sleep 2
 done
-
 echo "✅ MySQL disponible."
 
-# =============================================================================
-# public/ — copiar al volumen compartido con nginx si está vacío
-# =============================================================================
-if [ ! -f "/var/www/public/index.php" ]; then
-    echo "📁 Copiando public/ al volumen compartido..."
-    cp -r /var/www/public_src/. /var/www/public/
-    chown -R www-data:www-data /var/www/public
-fi
-
-# =============================================================================
-# .env
-# =============================================================================
-if [ ! -f "/var/www/.env" ]; then
-    echo "📋 Creando .env..."
+# -----------------------------------------------------------------------------
+# 3. .env — crear desde .env.example si no existe
+# -----------------------------------------------------------------------------
+if [ ! -f /var/www/.env ]; then
+    echo "📋 Creando .env desde .env.example..."
     cp /var/www/.env.example /var/www/.env
-
-    echo "" >> /var/www/.env
-    echo "# JWT" >> /var/www/.env
-    echo "JWT_SECRET=" >> /var/www/.env
-    echo "JWT_TTL=60" >> /var/www/.env
-    echo "" >> /var/www/.env
-    echo "# Swagger" >> /var/www/.env
-    echo "L5_SWAGGER_GENERATE_ALWAYS=true" >> /var/www/.env
-
-    sed -i "s|DB_HOST=127.0.0.1|DB_HOST=${DB_HOST}|g" /var/www/.env
-    sed -i "s|DB_PORT=3306|DB_PORT=${DB_PORT}|g" /var/www/.env
-    sed -i "s|DB_DATABASE=laravel|DB_DATABASE=${DB_DATABASE}|g" /var/www/.env
-    sed -i "s|DB_USERNAME=root|DB_USERNAME=${DB_USERNAME}|g" /var/www/.env
-    sed -i "s|DB_PASSWORD=|DB_PASSWORD=${DB_PASSWORD}|g" /var/www/.env
 fi
 
-# =============================================================================
-# APP_KEY
-# =============================================================================
+# -----------------------------------------------------------------------------
+# 4. APP_KEY — generar si está vacío
+# -----------------------------------------------------------------------------
 APP_KEY_VALUE=$(grep "^APP_KEY=" /var/www/.env | cut -d'=' -f2)
 if [ -z "$APP_KEY_VALUE" ]; then
     echo "🔑 Generando APP_KEY..."
-    php artisan key:generate --ansi
+    php /var/www/artisan key:generate --ansi
 fi
 
-# =============================================================================
-# JWT_SECRET
-# =============================================================================
+# -----------------------------------------------------------------------------
+# 5. JWT_SECRET — generar si está vacío
+# -----------------------------------------------------------------------------
 JWT_VALUE=$(grep "^JWT_SECRET=" /var/www/.env | cut -d'=' -f2)
 if [ -z "$JWT_VALUE" ]; then
     echo "🔐 Generando JWT_SECRET..."
-    php artisan jwt:secret --ansi --force
+    php /var/www/artisan jwt:secret --ansi --force
 fi
 
-# =============================================================================
-# Publicar configuraciones de paquetes
-# =============================================================================
-echo "📦 Publicando configuraciones..."
-php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServiceProvider" --quiet
-php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider" --quiet
-php artisan vendor:publish --provider="OwenIt\Auditing\AuditingServiceProvider" --tag="auditing-migrations" --quiet
-php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --quiet
+# -----------------------------------------------------------------------------
+# 6. Optimizar autoloader para producción
+# -----------------------------------------------------------------------------
+echo "⚡ Optimizando autoloader..."
+cd /var/www && composer dump-autoload --optimize --quiet
 
-# =============================================================================
-# Migraciones y seeders
-# =============================================================================
-echo "🗄️  Ejecutando migraciones..."
-php artisan migrate --force --ansi
-
-echo "🌱 Ejecutando seeders..."
-php artisan db:seed --force --ansi
-
-# =============================================================================
-# Swagger
-# =============================================================================
-echo "📖 Generando documentación Swagger..."
-php artisan l5-swagger:generate || echo "⚠️  Swagger: se generará en la primera petición."
-
-# =============================================================================
-# Arrancar PHP-FPM
-# =============================================================================
-echo "🚀 Arrancando PHP-FPM..."
-exec php-fpm
+# -----------------------------------------------------------------------------
+# 7. Lanzar supervisord (gestiona nginx + php-fpm)
+# -----------------------------------------------------------------------------
+echo "🚀 Arrancando servicios (nginx + php-fpm via supervisord)..."
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
