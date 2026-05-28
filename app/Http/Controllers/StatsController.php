@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Models\Audit;
+use OpenApi\Attributes as OA;
 
 /**
  * Controlador de estadísticas y auditoría.
@@ -15,6 +16,8 @@ use OwenIt\Auditing\Models\Audit;
  *
  * @OA\Tag(name="Stats", description="Estadísticas de uso y registros de auditoría (solo admin)")
  */
+
+#[OA\Tag(name: "Stats", description: "Estadísticas de uso y registros de auditoría (solo admin)")]
 class StatsController extends Controller
 {
     // =========================================================================
@@ -30,6 +33,16 @@ class StatsController extends Controller
      *   @OA\Response(response=200, description="Resumen de peticiones por endpoint, usuario y código HTTP")
      * )
      */
+
+    #[OA\Get(
+        path: "/api/stats/usage",
+        tags: ["Stats"],
+        summary: "Estadísticas globales de uso de la API",
+        security: [["bearerAuth" => []]],
+        responses: [
+            new OA\Response(response: 200, description: "Resumen de peticiones por endpoint, usuario y código HTTP")
+        ]
+    )]
     public function usage(): JsonResponse
     {
         return response()->json([
@@ -75,6 +88,19 @@ class StatsController extends Controller
      *   @OA\Response(response=200, description="Peticiones del usuario agrupadas por endpoint")
      * )
      */
+
+    #[OA\Get(
+        path: "/api/stats/usage/user/{id}",
+        tags: ["Stats"],
+        summary: "Estadísticas de uso de un usuario específico",
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Peticiones del usuario agrupadas por endpoint")
+        ]
+    )]
     public function usageByUser(User $user): JsonResponse
     {
         return response()->json([
@@ -105,6 +131,16 @@ class StatsController extends Controller
      *   @OA\Response(response=200, description="Lista de eventos de auditoría con antes/después")
      * )
      */
+
+    #[OA\Get(
+        path: "/api/stats/audits",
+        tags: ["Stats"],
+        summary: "Registro completo de auditoría (quién cambió qué y cuándo)",
+        security: [["bearerAuth" => []]],
+        responses: [
+            new OA\Response(response: 200, description: "Lista de eventos de auditoría con antes/después")
+        ]
+    )]
     public function audits(Request $request): JsonResponse
     {
         // La tabla `audits` la gestiona owen-it/laravel-auditing automáticamente.

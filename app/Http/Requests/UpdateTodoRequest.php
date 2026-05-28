@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use OpenApi\Attributes as OA;
 
 /**
  * @OA\Schema(
@@ -11,6 +12,14 @@ use Illuminate\Foundation\Http\FormRequest;
  *   @OA\Property(property="completed", type="boolean", example=true)
  * )
  */
+
+#[OA\Schema(
+  schema: "UpdateTodoRequest",
+  properties: [
+    new OA\Property(property: "title", type: "string", example: "Estudiar Laravel (actualizado)"),
+    new OA\Property(property: "completed", type: "boolean", example: true)
+  ]
+)]
 class UpdateTodoRequest extends FormRequest
 {
     public function authorize(): bool

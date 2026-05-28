@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateTodoRequest;
 use App\Models\Todo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use OpenApi\Attributes as OA;
 
 /**
  * Controlador para el CRUD de tareas (TODOs).
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\Auth;
  *
  * @OA\Tag(name="Todos", description="Gestión de tareas")
  */
+
+#[OA\Tag(name: "Todos", description: "Gestión de tareas")]
 class TodoController extends Controller
 {
     public function __construct()
@@ -47,6 +50,23 @@ class TodoController extends Controller
      *   )
      * )
      */
+
+    #[OA\Get(
+        path: "/api/todos",
+        tags: ["Todos"],
+        summary: "Listar todas las tareas del usuario autenticado",
+        security: [["bearerAuth" => []]],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Lista de tareas",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/Todo")
+                )
+            )
+        ]
+    )]
     public function index(): JsonResponse
     {
         // Los admins ven todas las tareas. Los usuarios solo las suyas.
@@ -77,6 +97,24 @@ class TodoController extends Controller
      *   )
      * )
      */
+
+    #[OA\Post(
+        path: "/api/todos",
+        tags: ["Todos"],
+        summary: "Crear una nueva tarea",
+        security: [["bearerAuth" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: "#/components/schemas/StoreTodoRequest")
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "Tarea creada",
+                content: new OA\JsonContent(ref: "#/components/schemas/Todo")
+            )
+        ]
+    )]
     public function store(StoreTodoRequest $request): JsonResponse
     {
         // $request->validated() devuelve SOLO los campos que pasaron la validación.
@@ -107,6 +145,29 @@ class TodoController extends Controller
      *   @OA\Response(response=404, description="Tarea no encontrada")
      * )
      */
+
+    #[OA\Get(
+        path: "/api/todos/{id}",
+        tags: ["Todos"],
+        summary: "Obtener una tarea por ID",
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Tarea encontrada",
+                content: new OA\JsonContent(ref: "#/components/schemas/Todo")
+            ),
+            new OA\Response(response: 404, description: "Tarea no encontrada")
+        ]
+    )]
     public function show(Todo $todo): JsonResponse
     {
         // Laravel resuelve automáticamente el modelo por ID gracias a
@@ -134,6 +195,32 @@ class TodoController extends Controller
      *   )
      * )
      */
+
+    #[OA\Put(
+        path: "/api/todos/{id}",
+        tags: ["Todos"],
+        summary: "Actualizar una tarea",
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: "#/components/schemas/UpdateTodoRequest")
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Tarea actualizada",
+                content: new OA\JsonContent(ref: "#/components/schemas/Todo")
+            )
+        ]
+    )]
     public function update(UpdateTodoRequest $request, Todo $todo): JsonResponse
     {
         $todo->update($request->validated());
@@ -156,6 +243,25 @@ class TodoController extends Controller
      *   @OA\Response(response=403, description="Sin permisos para eliminar esta tarea")
      * )
      */
+
+    #[OA\Delete(
+        path: "/api/todos/{id}",
+        tags: ["Todos"],
+        summary: "Eliminar una tarea",
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(response: 204, description: "Tarea eliminada correctamente"),
+            new OA\Response(response: 403, description: "Sin permisos para eliminar esta tarea")
+        ]
+    )]
     public function destroy(Todo $todo): JsonResponse
     {
         $todo->delete();

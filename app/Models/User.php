@@ -9,6 +9,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
 use OwenIt\Auditing\Contracts\Auditable;
 use OwenIt\Auditing\Auditable as AuditableTrait;
+use OpenApi\Attributes as OA;
 
 /**
  * Modelo User.
@@ -25,6 +26,16 @@ use OwenIt\Auditing\Auditable as AuditableTrait;
  *   @OA\Property(property="email", type="string",  example="ada@example.com"),
  * )
  */
+
+#[OA\Schema(
+  schema: "User",
+  properties: [
+    new OA\Property(property: "id", type: "integer", example: 1),
+    new OA\Property(property: "name", type: "string", example: "Ada Lovelace"),
+    new OA\Property(property: "email", type: "string", example: "ada@example.com"),
+    ]
+)]
+// #[OA\SecurityScheme(securityScheme: "bearerAuth", type: "http", scheme: "bearer", bearerFormat: "JWT", description: "Token JWT obtenido en POST /api/auth/login. Formato: Bearer {token}")]
 class User extends Authenticatable implements JWTSubject, Auditable
 {
     use HasFactory, Notifiable, HasRoles, AuditableTrait;

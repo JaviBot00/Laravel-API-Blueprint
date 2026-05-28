@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OpenApi\Attributes as OA;
 
 /**
  * Modelo ApiRequestLog.
@@ -18,6 +19,22 @@ use Illuminate\Database\Eloquent\Model;
  *   - response_time:  Tiempo de respuesta en milisegundos
  *   - ip_address:     IP del cliente
  */
+
+#[OA\Schema(
+  schema: "ApiRequestLog",
+  title: "Registro de Petición API",
+  description: "Esquema del modelo que registra cada petición a la API para estadísticas de uso",
+  properties: [
+    new OA\Property(property: "id", type: "integer", example: 1),
+    new OA\Property(property: "user_id", type: "integer", nullable: true, example: 5, description: "ID del usuario que hizo la petición (null si no autenticado)"),
+    new OA\Property(property: "method", type: "string", example: "GET", description: "Método HTTP"),
+    new OA\Property(property: "path", type: "string", example: "/api/todos", description: "Ruta del endpoint"),
+    new OA\Property(property: "status_code", type: "integer", example: 200, description: "Código de respuesta HTTP"),
+    new OA\Property(property: "response_time", type: "integer", example: 150, description: "Tiempo de respuesta en milisegundos"),
+    new OA\Property(property: "ip_address", type: "string", example: "127.0.0.1", description: "IP del cliente"),
+    new OA\Property(property: "created_at", type: "string", format: "date-time", example: "2024-06-01T12:34:56Z", description: "Fecha y hora de la petición")
+  ]
+)]
 class ApiRequestLog extends Model
 {
     // Esta tabla nunca se actualiza, solo se insertan registros

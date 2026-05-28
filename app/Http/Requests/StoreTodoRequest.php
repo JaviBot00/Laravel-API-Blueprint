@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use OpenApi\Attributes as OA;
 
 /**
  * Validación para crear una nueva tarea.
@@ -19,6 +20,15 @@ use Illuminate\Foundation\Http\FormRequest;
  *   @OA\Property(property="completed", type="boolean", example=false)
  * )
  */
+
+#[OA\Schema(
+  schema: "StoreTodoRequest",
+  required: ["title"],
+  properties: [
+    new OA\Property(property: "title", type: "string", example: "Estudiar Laravel"),
+    new OA\Property(property: "completed", type: "boolean", example: false)
+  ]
+)]
 class StoreTodoRequest extends FormRequest
 {
     /**
