@@ -61,6 +61,12 @@ return Application::configure(basePath: dirname(__DIR__))
         | ni su middleware statefulApi(). Laravel ya es stateless por defecto
         | en las rutas definidas en routes/api.php.
         */
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\SetCacheHeaders::class,
+        ]);
+
+        // Forzar Accept: application/json en todas las rutas /api/*
+        $middleware->prepend(\App\Http\Middleware\ForceJsonResponse::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
 
