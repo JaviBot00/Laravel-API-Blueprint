@@ -49,14 +49,17 @@ if [ -z "$APP_KEY_VALUE" ]; then
     php /var/www/artisan key:generate --ansi
 fi
 
-# -----------------------------------------------------------------------------
-# 5. JWT_SECRET — generar si está vacío
-# -----------------------------------------------------------------------------
-JWT_VALUE=$(grep "^JWT_SECRET=" /var/www/.env | cut -d'=' -f2)
-if [ -z "$JWT_VALUE" ]; then
-    echo "🔐 Generando JWT_SECRET..."
-    php /var/www/artisan jwt:secret --ansi --force
-fi
+# # -----------------------------------------------------------------------------
+# # 5. JWT_SECRET — generar si está vacío
+# # -----------------------------------------------------------------------------
+# JWT_VALUE=$(grep "^JWT_SECRET=" /var/www/.env | cut -d'=' -f2)
+# if [ -z "$JWT_VALUE" ]; then
+#     echo "🔐 Generando JWT_SECRET..."
+#     php /var/www/artisan jwt:secret --ansi --force
+# fi
+
+# echo "🧹 Limpiando caché de config para reflejar los secrets generados..."
+# php /var/www/artisan config:clear
 
 # -----------------------------------------------------------------------------
 # 6. Optimizar autoloader para producción

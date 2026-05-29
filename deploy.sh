@@ -35,3 +35,12 @@ php artisan config:cache
 php artisan route:cache
 
 echo "✅ Despliegue completado."
+
+# -----------------------------------------------------------------------------
+#  Cambiar permisos de /var/www al usuario www-data (ejecutado como root)
+#  Esto es necesario porque supervisord arranca como root, pero nginx y php-fpm
+#  corren como www-data. Si no se hace esto, nginx/php-fpm no podrán escribir en /var/www.
+# -----------------------------------------------------------------------------
+echo "🔒 Ajustando permisos finales de /var/www para www-data..."
+chown -R www-data:www-data /var/www
+chmod +x /var/www/artisan

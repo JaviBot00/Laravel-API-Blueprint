@@ -13,6 +13,7 @@ services:
       - storage_logs:/var/www/storage/logs
     env_file:
       - .env
+      - /etc/laravel-api/secrets.env
     ports:
       - "8080:80"
     networks:

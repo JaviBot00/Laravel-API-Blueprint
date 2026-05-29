@@ -34,6 +34,12 @@ RUN composer require \
 # ---------------------------------------------------------------------------
 RUN cp -r /tmp/laravel/. /var/www/ && rm -rf /tmp/laravel
 
+# Eliminar el .env generado por laravel/laravel para que entrypoint.sh use el nuestro
+RUN rm -f /var/www/.env
+
+# Eliminar el server block por defecto de Debian que interfiere con el nuestro
+RUN rm -f /etc/nginx/sites-enabled/default
+
 WORKDIR /var/www
 
 # ---------------------------------------------------------------------------
@@ -68,9 +74,9 @@ RUN mkdir -p /var/www/storage/logs \
              /var/www/storage/framework/sessions \
              /var/www/storage/framework/views \
              /var/www/bootstrap/cache \
-    && chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www/storage \
-    && chmod -R 755 /var/www/bootstrap/cache \
+    # && chown -R www-data:www-data /var/www \
+    # && chmod -R 755 /var/www/storage \
+    # && chmod -R 755 /var/www/bootstrap/cache \
     && chmod +x /var/www/artisan
 
 # ---------------------------------------------------------------------------
