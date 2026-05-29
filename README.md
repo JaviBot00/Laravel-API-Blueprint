@@ -38,27 +38,74 @@ El proyecto de ejemplo es una API de tareas (TODO), suficientemente sencilla par
 
 ## Puesta en marcha
 
+### 1. Clonar el repositorio
+
 ```bash
-# 1. Clonar el repositorio
 git clone https://github.com/tu-usuario/laravel-api-blueprint.git
 cd laravel-api-blueprint
-
-# 2. Copiar el archivo de variables de entorno
-cp .env.example .env
-
-# 3. Levantar los contenedores
-docker compose up -d --build
 ```
 
-Eso es todo. El contenedor de la app espera automáticamente a que MySQL esté listo y luego ejecuta las migraciones, el seeder y genera la documentación Swagger. Puedes seguir el proceso con:
+### 2. Copiar el archivo de variables de entorno
 
 ```bash
-docker compose logs -f app
+cp .env.example .env
 ```
 
-La API estará disponible en `http://localhost:8080/api`
+### 3. Crear el fichero de secrets
 
-La documentación Swagger estará en `http://localhost:8080/api/documentation`
+El `JWT_SECRET` se gestiona **fuera del repositorio** en un fichero con permisos
+restringidos, de forma que nunca se suba a git ni quede expuesto en la imagen Docker.
+
+```bash
+sudo mkdir -p /etc/laravel-api
+echo "JWT_SECRET=$(openssl rand -hex 32)" | sudo tee /etc/laravel-api/secrets.env
+sudo chmod 600 /etc/laravel-api/secrets.env
+```
+
+> ⚠️ No uses `export JWT_SECRET=...` con `sudo`. El comando `sudo` descarta las
+> variables de entorno del usuario (`env_reset`) y Docker Compose las recibe vacías.
+> El fichero `/etc/laravel-api/secrets.env` es la única forma fiable de pasar secrets
+> cuando Docker se gestiona con `sudo`.
+
+### 4. Levantar los contenedores
+
+```bash
+sudo docker compose up -d --build
+```
+
+La primera vez tarda unos minutos: descarga la imagen base, instala Laravel y todos
+los paquetes vía Composer. Sigue el proceso con:
+
+```bash
+sudo docker compose logs -f app
+```
+
+### 5. Ejecutar el deploy
+
+```bash
+sudo docker compose exec app sh /var/www/deploy.sh
+```
+
+Publica configuraciones, ejecuta migraciones, seeders y genera la documentación Swagger.
+
+La API estará disponible en `http://localhost:8080/api` y la documentación Swagger
+en `http://localhost:8080/api/documentation`.
+
+Para más detalle ver → [docs/00-arranque-rapido.md](docs/00-arranque-rapido.md)
+
+---
+
+## Variables de entorno
+
+Las variables de entorno se dividen en dos ficheros con responsabilidades distintas:
+
+| Fichero | Contenido | ¿Se sube a git? |
+|---|---|---|
+| `.env` | Config de la app (DB, URL, logs, Swagger...) | No (en `.gitignore`) |
+| `/etc/laravel-api/secrets.env` | Secrets del sistema (`JWT_SECRET`) | No (fuera del repo) |
+
+El `.env.example` documenta todas las variables de configuración con sus valores por
+defecto. Los secrets nunca aparecen en el repositorio.
 
 ---
 
@@ -70,12 +117,13 @@ laravel-api-blueprint/
 ├── app/
 │   ├── Http/
 │   │   ├── Controllers/       # Un controlador por recurso
-│   │   ├── Middleware/        # JWT, auditoría, estadísticas
+│   │   ├── Middleware/        # JWT, ForceJsonResponse, estadísticas
 │   │   └── Requests/          # Validación extraída del controlador
 │   ├── Models/                # Eloquent: User, Todo, AuditLog...
 │   └── Policies/              # Reglas de autorización por modelo
 │
 ├── docs/                      # Documentación progresiva en Markdown
+│   ├── 00-arranque-rapido.md  # ← Empezar aquí si algo falla
 │   ├── 01-introduccion-laravel-vs-slim.md
 │   ├── 02-autenticacion-jwt.md
 │   ├── 03-usuarios-y-permisos.md
@@ -85,6 +133,7 @@ laravel-api-blueprint/
 │
 ├── docker/
 │   ├── php/Dockerfile
+│   ├── php/entrypoint.sh
 │   └── nginx/default.conf
 │
 ├── docker-compose.yml
@@ -98,6 +147,7 @@ laravel-api-blueprint/
 
 La carpeta `docs/` contiene guías progresivas pensadas para quien no conoce Laravel:
 
+0. [Arranque rápido y resolución de problemas](docs/00-arranque-rapido.md)
 1. [Introducción: Laravel vs Slim](docs/01-introduccion-laravel-vs-slim.md)
 2. [Autenticación JWT](docs/02-autenticacion-jwt.md)
 3. [Usuarios y permisos](docs/03-usuarios-y-permisos.md)
@@ -109,7 +159,7 @@ La carpeta `docs/` contiene guías progresivas pensadas para quien no conoce Lar
 
 ## Credenciales por defecto (seeder)
 
-Tras ejecutar `php artisan migrate --seed` tendrás disponibles estos usuarios de prueba:
+Tras ejecutar `deploy.sh` tendrás disponibles estos usuarios de prueba:
 
 | Email | Contraseña | Rol |
 |---|---|---|
@@ -117,9 +167,3 @@ Tras ejecutar `php artisan migrate --seed` tendrás disponibles estos usuarios d
 | user@example.com | password | user |
 
 > ⚠️ Cambiar estas credenciales antes de cualquier despliegue en producción.
-
----
-
-## Licencia
-
-MIT
