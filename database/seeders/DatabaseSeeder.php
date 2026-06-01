@@ -16,8 +16,9 @@ use Spatie\Permission\Models\Role;
  * O solo el seeder: php artisan db:seed
  *
  * Crea:
- *   - Los roles 'admin' y 'user'
- *   - Un usuario administrador
+ *   - Roles para la API REST (guard 'api'):  admin, user
+ *   - Rol para el panel Filament (guard 'web'): super_admin
+ *   - Un usuario administrador con ambos roles
  *   - Un usuario normal con algunas tareas de ejemplo
  */
 class DatabaseSeeder extends Seeder
@@ -25,15 +26,31 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // =====================================================================
-        // 1. Crear roles con Spatie Permission
+        // 1. Roles para la API REST — guard 'api'
+        //
+        // Estos roles protegen los endpoints JWT en routes/api.php mediante
+        // el middleware 'role:admin' de Spatie.
         // =====================================================================
 
-        // firstOrCreate evita errores si se ejecuta el seeder más de una vez
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'api']);
         $userRole  = Role::firstOrCreate(['name' => 'user',  'guard_name' => 'api']);
 
         // =====================================================================
-        // 2. Crear usuario administrador
+        // 2. Rol para el panel Filament — guard 'web'
+        //
+        // Shield usa el guard 'web' para el panel /admin. Este rol es
+        // independiente de los anteriores: un usuario puede tener 'admin'
+        // (para la API) y 'super_admin' (para el panel) simultáneamente.
+        //
+        // IMPORTANTE: este bloque debe ejecutarse ANTES de shield:install,
+        // o shield:install lo creará solo. Si ejecutas shield:install --fresh
+        // después del seeder, los permisos se regeneran pero el rol persiste.
+        // =====================================================================
+
+        $superAdminRole = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+
+        // =====================================================================
+        // 3. Usuario administrador
         // =====================================================================
 
         $admin = User::firstOrCreate(
@@ -44,11 +61,11 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // assignRole es un método de Spatie\Permission\Traits\HasRoles
-        $admin->assignRole($adminRole);
+        $admin->assignRole($adminRole);      // acceso a rutas /api/admin/*
+        $admin->assignRole($superAdminRole); // acceso al panel /admin
 
         // =====================================================================
-        // 3. Crear usuario normal con tareas de ejemplo
+        // 4. Usuario normal con tareas de ejemplo
         // =====================================================================
 
         $user = User::firstOrCreate(
@@ -61,7 +78,6 @@ class DatabaseSeeder extends Seeder
 
         $user->assignRole($userRole);
 
-        // Crear algunas tareas de ejemplo para el usuario normal
         $todos = [
             ['title' => 'Leer la documentación de Laravel', 'completed' => true],
             ['title' => 'Configurar el entorno Docker',     'completed' => true],
@@ -77,7 +93,9 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->command->info('✅ Seeder ejecutado correctamente.');
-        $this->command->info('   Admin: admin@example.com / password');
-        $this->command->info('   User:  user@example.com  / password');
+        $this->command->info('   API   → admin@example.com / password  (rol: admin,      guard: api)');
+        $this->command->info('   Panel → admin@example.com / password  (rol: super_admin, guard: web)');
+        $this->command->info('   User  → user@example.com  / password  (rol: user,        guard: api)');
+        $this->command->info('   Panel: http://localhost:8080/admin');
     }
 }

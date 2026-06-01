@@ -66,7 +66,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Forzar Accept: application/json en todas las rutas /api/*
-        $middleware->prepend(\App\Http\Middleware\ForceJsonResponse::class);
+        // Cómo debe quedar — solo rutas /api/*
+        // Elimina el prepend global y añade el middleware al grupo api:
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\SetCacheHeaders::class,
+            \App\Http\Middleware\ForceJsonResponse::class,  // ← mover aquí
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
 

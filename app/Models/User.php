@@ -2,87 +2,56 @@
 
 namespace App\Models;
 
+use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Tymon\JWTAuth\Contracts\JWTSubject;
-use Spatie\Permission\Traits\HasRoles;
-use OwenIt\Auditing\Contracts\Auditable;
 use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Permission\Traits\HasRoles;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 use OpenApi\Attributes as OA;
 
 /**
  * Modelo User.
  *
- * Implementa tres interfaces/traits clave:
- *   - JWTSubject:  permite que este modelo sea el "sujeto" del token JWT.
- *   - HasRoles:    añade los métodos de Spatie para asignar y comprobar roles/permisos.
- *   - Auditable:   registra automáticamente cada cambio (create/update/delete) en audit_logs.
- *
- * @OA\Schema(
- *   schema="User",
- *   @OA\Property(property="id",    type="integer", example=1),
- *   @OA\Property(property="name",  type="string",  example="Ada Lovelace"),
- *   @OA\Property(property="email", type="string",  example="ada@example.com"),
- * )
+ * Implementa cuatro interfaces/traits:
+ *   - JWTSubject:    sujeto del token JWT para la API REST.
+ *   - HasRoles:      roles y permisos de Spatie (guard 'api' para la API).
+ *   - Auditable:     registra cada cambio en audit_logs.
+ *   - FilamentUser:  permite o deniega el acceso al panel /admin.
  */
 
 #[OA\Schema(
-  schema: "User",
-  properties: [
-    new OA\Property(property: "id", type: "integer", example: 1),
-    new OA\Property(property: "name", type: "string", example: "Ada Lovelace"),
-    new OA\Property(property: "email", type: "string", example: "ada@example.com"),
+    schema: 'User',
+    properties: [
+        new OA\Property(property: 'id',    type: 'integer', example: 1),
+        new OA\Property(property: 'name',  type: 'string',  example: 'Ada Lovelace'),
+        new OA\Property(property: 'email', type: 'string',  example: 'ada@example.com'),
     ]
 )]
-// #[OA\SecurityScheme(securityScheme: "bearerAuth", type: "http", scheme: "bearer", bearerFormat: "JWT", description: "Token JWT obtenido en POST /api/auth/login. Formato: Bearer {token}")]
-class User extends Authenticatable implements JWTSubject, Auditable
+class User extends Authenticatable implements JWTSubject, Auditable, FilamentUser
 {
-    use HasFactory, Notifiable, HasRoles, AuditableTrait;
+    use HasFactory, Notifiable, HasRoles, AuditableTrait, HasPanelShield;
 
-    // -------------------------------------------------------------------------
-    // Campos permitidos para asignación masiva ($model->fill([...]))
-    // -------------------------------------------------------------------------
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
-
-    // -------------------------------------------------------------------------
-    // Campos que NUNCA se incluirán en la respuesta JSON ni en arrays
-    // -------------------------------------------------------------------------
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    // -------------------------------------------------------------------------
-    // Casting de tipos: convierte automáticamente el campo al tipo indicado
-    // -------------------------------------------------------------------------
-    protected $casts = [
+    protected $fillable = ['name', 'email', 'password'];
+    protected $hidden   = ['password', 'remember_token'];
+    protected $casts    = [
         'email_verified_at' => 'datetime',
-        'password'          => 'hashed',   // hashea automáticamente al asignar
+        'password'          => 'hashed',
     ];
 
     // =========================================================================
-    // Métodos requeridos por JWTSubject
+    // JWTSubject — sin cambios
     // =========================================================================
 
-    /**
-     * Devuelve el identificador único que se guardará dentro del token JWT.
-     * Por defecto es el ID del usuario en la base de datos.
-     */
     public function getJWTIdentifier(): mixed
     {
         return $this->getKey();
     }
 
-    /**
-     * Permite añadir claims (campos extra) al payload del token JWT.
-     * Aquí añadimos el email y el rol principal para poder leerlos sin
-     * hacer una consulta a la base de datos.
-     */
     public function getJWTCustomClaims(): array
     {
         return [
@@ -92,12 +61,27 @@ class User extends Authenticatable implements JWTSubject, Auditable
     }
 
     // =========================================================================
-    // Relaciones Eloquent
+    // FilamentUser
+    //
+    // HasPanelShield (incluido arriba) ya implementa canAccessPanel() y da
+    // acceso a usuarios con rol 'super_admin' (guard 'web').
+    //
+    // Lo sobreescribimos para incluir también el rol 'admin' existente,
+    // de modo que el administrador de la API pueda entrar al panel sin
+    // necesidad de asignarle un segundo rol manualmente.
+    //
+    // Nota: hasAnyRole() comprueba ambos guards (api y web) automáticamente.
     // =========================================================================
 
-    /**
-     * Un usuario puede tener muchas tareas (TODOs).
-     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->hasAnyRole(['super_admin', 'admin']);
+    }
+
+    // =========================================================================
+    // Relaciones
+    // =========================================================================
+
     public function todos(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Todo::class);
