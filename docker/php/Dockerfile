@@ -21,13 +21,25 @@ RUN composer create-project laravel/laravel /tmp/laravel "11.*" \
 # ---------------------------------------------------------------------------
 # 2. Instalar paquetes del proyecto
 # ---------------------------------------------------------------------------
-RUN composer require \
-    tymon/jwt-auth \
-    spatie/laravel-permission \
-    owen-it/laravel-auditing \
-    darkaonline/l5-swagger \
-    doctrine/annotations \
-    --working-dir=/tmp/laravel --no-interaction --prefer-dist --quiet
+# RUN composer require \
+#     tymon/jwt-auth \
+#     spatie/laravel-permission \
+#     owen-it/laravel-auditing \
+#     darkaonline/l5-swagger \
+#     doctrine/annotations \
+#     filament/filament \
+#     bezhansalleh/filament-shield \
+#     tapp/filament-auditing \
+#     --working-dir=/tmp/laravel --no-interaction --prefer-dist --quiet
+
+# ---------------------------------------------------------------------------
+# 2. Copiar tu composer.json encima del que generó Laravel
+#    y instalar los paquetes
+# ---------------------------------------------------------------------------
+COPY composer.json /tmp/laravel/composer.json
+RUN composer install \
+    --working-dir=/tmp/laravel --no-interaction --prefer-dist \
+    --no-dev --optimize-autoloader --quiet
 
 # ---------------------------------------------------------------------------
 # 3. Mover Laravel a /var/www

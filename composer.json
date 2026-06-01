@@ -9,7 +9,10 @@
         "tymon/jwt-auth": "^2.1",
         "spatie/laravel-permission": "^6.0",
         "owen-it/laravel-auditing": "^13.0",
-        "darkaonline/l5-swagger": "^8.6"
+        "darkaonline/l5-swagger": "^8.6",
+        "filament/filament": "^4.0",
+        "bezhansalleh/filament-shield": "^4.0",
+        "tapp/filament-auditing": "^4.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

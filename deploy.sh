@@ -20,6 +20,10 @@ php artisan vendor:publish \
     --provider="OwenIt\Auditing\AuditingServiceProvider" --tag="auditing-migrations" --quiet
 php artisan vendor:publish \
     --provider="L5Swagger\L5SwaggerServiceProvider" --quiet
+php artisan vendor:publish \
+    --tag="filament-shield-config" --quiet
+php artisan vendor:publish \
+    --tag="filament-auditing-config" --quiet
 
 echo "🗄️  Ejecutando migraciones..."
 php artisan migrate --force --ansi
@@ -27,19 +31,29 @@ php artisan migrate --force --ansi
 echo "🌱 Ejecutando seeders..."
 php artisan db:seed --force --ansi
 
+echo "🛡️  Generando roles y permisos del panel (Shield)..."
+# --fresh regenera todos los permisos desde cero.
+# Solo usar en instalación inicial o cuando se añadan nuevos Resources.
+# En actualizaciones de código sin nuevos Resources, usar: shield:generate --all
+php artisan shield:install --fresh
+
 echo "📖 Generando documentación Swagger..."
 php artisan l5-swagger:generate
+
+echo "⚡ Publicando assets de Filament..."
+php artisan filament:assets
 
 echo "🧹 Limpiando y optimizando caché..."
 php artisan config:cache
 php artisan route:cache
 
 echo "✅ Despliegue completado."
+echo "   API:    http://localhost:8080/api/documentation"
+echo "   Panel:  http://localhost:8080/admin"
+echo "   Login:  admin@example.com / password"
 
 # -----------------------------------------------------------------------------
-#  Cambiar permisos de /var/www al usuario www-data (ejecutado como root)
-#  Esto es necesario porque supervisord arranca como root, pero nginx y php-fpm
-#  corren como www-data. Si no se hace esto, nginx/php-fpm no podrán escribir en /var/www.
+#  Permisos finales para www-data
 # -----------------------------------------------------------------------------
 echo "🔒 Ajustando permisos finales de /var/www para www-data..."
 chown -R www-data:www-data /var/www
