@@ -4,24 +4,25 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ApiRequestLogResource\Pages;
 use App\Models\ApiRequestLog;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use BackedEnum;
 
 class ApiRequestLogResource extends Resource
 {
     protected static ?string $model          = ApiRequestLog::class;
-    protected static ?string $navigationIcon  = 'heroicon-o-chart-bar';
+    protected static BackedEnum|string|null $navigationIcon  = 'heroicon-o-chart-bar';
     protected static ?string $navigationLabel = 'Logs de API';
-    protected static ?string $navigationGroup = 'Estadísticas';
+    protected static \UnitEnum|string|null $navigationGroup = 'Estadísticas';
     protected static ?int    $navigationSort  = 2;
 
     // Solo lectura: no se crean ni editan registros desde el panel.
     // Los registros los genera automáticamente el middleware LogApiRequest.
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([]);
+        return $schema->schema([]);
     }
 
     public static function canCreate(): bool

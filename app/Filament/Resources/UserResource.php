@@ -5,22 +5,29 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Tapp\FilamentAuditing\RelationManagers\AuditsRelationManager;
+use BackedEnum;
 
 class UserResource extends Resource
 {
-    protected static ?string $model          = User::class;
-    protected static ?string $navigationIcon  = 'heroicon-o-users';
-    protected static ?string $navigationGroup = 'Gestión';
-    protected static ?int    $navigationSort  = 1;
+    protected static ?string $model = User::class;
+    
+    //  CAMBIADO: Tipados estrictos corregidos para Filament v4
+    protected static BackedEnum|string|null $navigationIcon  = 'heroicon-o-users';
+    protected static \UnitEnum|string|null $navigationGroup = 'Gestión';
+    protected static ?int $navigationSort = 1;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->components([
             Forms\Components\TextInput::make('name')
                 ->required()
                 ->maxLength(255),
@@ -69,12 +76,12 @@ class UserResource extends Resource
                     ->label('Filtrar por rol'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
