@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class ApiActivityChart extends ChartWidget
 {
-    protected static ?string $heading = 'Llamadas a la API — últimos 14 días';
+    protected ?string $heading = 'Llamadas a la API — últimos 14 días';
     protected static ?int    $sort    = 2;
 
     protected function getData(): array

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class TopEndpointsChart extends ChartWidget
 {
-    protected static ?string $heading = 'Top 8 endpoints más llamados';
+    protected ?string $heading = 'Top 8 endpoints más llamados';
     protected static ?int    $sort    = 3;
 
     protected function getData(): array
