@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateTodoRequest;
 use App\Models\Todo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use OpenApi\Attributes as OA;
 
 /**
@@ -32,7 +33,7 @@ class TodoController extends Controller
     {
         // Aplica la autorización de TodoPolicy a todos los métodos de este controlador.
         // Laravel buscará automáticamente App\Policies\TodoPolicy.
-        $this->authorizeResource(Todo::class, 'todo');
+        Gate::authorizeResource(Todo::class, 'todo');
     }
 
     // =========================================================================
