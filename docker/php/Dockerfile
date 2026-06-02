@@ -1,14 +1,20 @@
 FROM php:8.3-fpm
 
 # ---------------------------------------------------------------------------
-# Dependencias del sistema + nginx + supervisor
+# Dependencias del sistema + nginx + supervisor + PHP Extensions
 # ---------------------------------------------------------------------------
 RUN apt-get update && apt-get install -y \
-    git curl libpng-dev libonig-dev libxml2-dev zip unzip \
+    libicu-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    git curl zip unzip \
     nginx supervisor \
+    && docker-php-ext-configure gd \
+    && docker-php-ext-install intl gd pdo_mysql mbstring exif pcntl bcmath zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -21,25 +27,30 @@ RUN composer create-project laravel/laravel /tmp/laravel "11.*" \
 # ---------------------------------------------------------------------------
 # 2. Instalar paquetes del proyecto
 # ---------------------------------------------------------------------------
-# RUN composer require \
-#     tymon/jwt-auth \
-#     spatie/laravel-permission \
-#     owen-it/laravel-auditing \
-#     darkaonline/l5-swagger \
-#     doctrine/annotations \
-#     filament/filament \
-#     bezhansalleh/filament-shield \
-#     tapp/filament-auditing \
-#     --working-dir=/tmp/laravel --no-interaction --prefer-dist --quiet
+RUN composer require \
+    tymon/jwt-auth \
+    spatie/laravel-permission \
+    owen-it/laravel-auditing \
+    darkaonline/l5-swagger \
+    doctrine/annotations \
+    filament/filament \
+    bezhansalleh/filament-shield \
+    tapp/filament-auditing \
+    --working-dir=/tmp/laravel --no-interaction --prefer-dist --no-audit --quiet -W
+
+    # "tymon/jwt-auth:^2.0" \
+    # "spatie/laravel-permission:^6.0" \
+    # "filament/filament:^3.0" \
+    # "bezhansalleh/filament-shield:^3.0" \
 
 # ---------------------------------------------------------------------------
 # 2. Copiar tu composer.json encima del que generó Laravel
 #    y instalar los paquetes
 # ---------------------------------------------------------------------------
-COPY composer.json /tmp/laravel/composer.json
-RUN composer install \
-    --working-dir=/tmp/laravel --no-interaction --prefer-dist \
-    --no-dev --optimize-autoloader --quiet
+# COPY composer.json /tmp/laravel/composer.json
+# RUN composer install \
+#     --working-dir=/tmp/laravel --no-interaction --prefer-dist \
+#     --no-dev --optimize-autoloader --quiet
 
 # ---------------------------------------------------------------------------
 # 3. Mover Laravel a /var/www

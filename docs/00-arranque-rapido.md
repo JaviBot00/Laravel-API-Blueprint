@@ -29,8 +29,16 @@ de modo que nunca se sube a git ni se incluye en la imagen Docker.
 # Crear el directorio de secrets del sistema
 sudo mkdir -p /etc/laravel-api
 
-# Generar el secret y guardarlo
+# Generar el secret y guardarlo en un fichero con permisos restringidos
+# Realiza una sola ejecución de este comando: genera un secret nuevo cada vez, así que no lo repitas.
 echo "JWT_SECRET=$(openssl rand -hex 32)" | sudo tee /etc/laravel-api/secrets.env
+
+# Desplegar el docker-compose para hacer uso de `php artisan key:generate --show`
+# Luego recrear los contenedores para que el nuevo secret se inyecte en el contenedor y se genere el APP_KEY correcto.
+sudo docker compose up -d --build
+cd laravel-api-blueprint
+echo "APP_KEY=$(sudo docker compose exec -T app php artisan key:generate --show)" | sudo tee -a /etc/laravel-api/secrets.env
+sudo docker compose down -v
 
 # Restringir permisos: solo root puede leerlo
 sudo chmod 600 /etc/laravel-api/secrets.env

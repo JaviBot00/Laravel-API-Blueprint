@@ -17,7 +17,7 @@ php artisan vendor:publish \
 php artisan vendor:publish \
     --provider="Spatie\Permission\PermissionServiceProvider" --quiet
 php artisan vendor:publish \
-    --provider="OwenIt\Auditing\AuditingServiceProvider" --tag="auditing-migrations" --quiet
+    --provider="OwenIt\Auditing\AuditingServiceProvider" --tag="migrations" --quiet
 php artisan vendor:publish \
     --provider="L5Swagger\L5SwaggerServiceProvider" --quiet
 php artisan vendor:publish \
@@ -35,7 +35,9 @@ echo "🛡️  Generando roles y permisos del panel (Shield)..."
 # --fresh regenera todos los permisos desde cero.
 # Solo usar en instalación inicial o cuando se añadan nuevos Resources.
 # En actualizaciones de código sin nuevos Resources, usar: shield:generate --all
-php artisan shield:install --fresh
+php artisan shield:generate --all --panel=admin --panel=panel_user --no-interaction
+php artisan shield:install admin
+# php artisan shield:install panel_user
 
 echo "📖 Generando documentación Swagger..."
 php artisan l5-swagger:generate

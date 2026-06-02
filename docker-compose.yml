@@ -11,6 +11,8 @@ services:
     # El único volumen necesario es el de logs, para persistirlos fuera del contenedor.
     volumes:
       - storage_logs:/var/www/storage/logs
+    environment:
+      APP_KEY: ${APP_KEY}
     env_file:
       - .env
       - /etc/laravel-api/secrets.env
