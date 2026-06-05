@@ -1,4 +1,4 @@
-# laravel-api-blueprint
+# Laravel-API-Blueprint
 
 > API RESTful de referencia construida con Laravel. Incluye autenticación JWT, gestión de usuarios y permisos por roles, auditoría de acciones, estadísticas de uso y documentación Swagger. Diseñada como guía progresiva de migración desde Slim PHP, con Docker incluido.
 
