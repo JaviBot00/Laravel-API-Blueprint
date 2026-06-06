@@ -111,11 +111,11 @@ return [
         'constants' => [
             /*
              * URL pública de la API — la usa @OA\Server en OpenApiSpec.php.
-             * En producción debe valer https://laravel.diputacion.malaga.es
+             * En producción debe valer https://laravel.tudominio.com
              * En desarrollo local puede valer http://localhost:8080
              * Configúrala en el .env con la clave L5_SWAGGER_CONST_HOST.
              */
-            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://laravel.diputacion.malaga.es'),
+            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://laravel.tudominio.com'),
         ],
     ],
 ];

@@ -75,7 +75,7 @@ php artisan filament:assets
 Tras ejecutar `deploy.sh`, el panel está disponible en la misma URL de la aplicación:
 
 - **Desarrollo:** `http://localhost:8080/admin`
-- **Producción:** `https://laravel.diputacion.malaga.es/admin`
+- **Producción:** `https://laravel.tudominio.com/admin`
 - **Credenciales:** `admin@example.com` / `password`
 
 El usuario `admin@example.com` ya tiene el rol `super_admin` (guard `web`) asignado por el seeder. El usuario `user@example.com` no tiene acceso al panel.

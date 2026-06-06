@@ -169,7 +169,7 @@ StoreTodoRequest.php  → #[OA\Schema] para el body de creación de tareas
     'generate_always' => env('L5_SWAGGER_GENERATE_ALWAYS', false),
     'constants' => [
         // URL pública que verá la UI de Swagger en "Try it out"
-        'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://laravel.diputacion.malaga.es'),
+        'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://laravel.tudominio.com'),
     ],
 ],
 ```
